@@ -1,0 +1,82 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    restart: always
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: director
+      MONGO_INITDB_ROOT_PASSWORD: director
+    networks:
+      - movie-network
+
+  mongo-express:
+    image: mongo-express
+    container_name: mongoexpress
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=director
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=director
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+    networks:
+      - movie-network
+
+  director-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: director-api
+    restart: always
+    environment:
+      - SPRING_DATA_MONGODB_HOST=mongodb
+      - SPRING_DATA_MONGODB_PORT=27017
+      - SPRING_DATA_MONGODB_DATABASE=director
+      - SPRING_DATA_MONGODB_USERNAME=director
+      - SPRING_DATA_MONGODB_PASSWORD=director
+      - SPRING_DATA_MONGODB_AUTHENTICATION_DATABASE=admin
+      - SPRING_DATA_MONGODB_AUTOINDEX_CREATION=true
+    ports:
+      - "8082:8082"
+    networks:
+      - movie-network
+  postgres-db:
+    image: postgres:13.1
+    container_name: postgres-db
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: movie
+      POSTGRES_PASSWORD: movie
+      POSTGRES_DB: movie
+    networks:
+      - movie-network
+
+  movie-api:
+    build:
+      context: ../movie-api
+      dockerfile: Dockerfile
+    container_name: movie-api
+    restart: always
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-db:5432/movie
+      - SPRING_DATASOURCE_USERNAME=movie
+      - SPRING_DATASOURCE_PASSWORD=movie
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_SHOW_SQL=true
+      - SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL=true
+    depends_on:
+      - postgres-db
+    ports:
+      - "8083:8083"
+    networks:
+      - movie-network
+networks:
+  movie-network:

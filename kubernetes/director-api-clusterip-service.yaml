@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: director-api-clusterip-service
+spec:
+  selector:
+    app: director-api-pod
+  ports:
+    - protocol: TCP
+      port: 8082
+      targetPort: 8082
+  type: ClusterIP
+  
